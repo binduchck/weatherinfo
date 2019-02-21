@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Weather Information</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+  </head>
+      <body>
+      <div id="starting">
+        <div class="container">
+          <div class="row">
+            <h1>Weather Information of London
+            </h1>
+            <div class="form-inline my-2 my-lg-0" style="margin-left: 0%;">
+              <label for="date_picker">Select the dates for weather check</label>
+              <input type="date" id="start" name="date_start" v-model="startDate">
+              <input type="date" id="end" name="date_end" v-model="endDate">
+              <button class="btn btn-info" v-on:click="filterWeather()">Search</button>
+            </div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Location</th>
+                  <th scope="col">Temperature(Celcius)</th>
+                  <th scope="col">Cloud</th>
+                  <th scope="col">Wind</th>
+                  <th scope="col">Date and Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="data in list">
+                  <th scope="row">${data.region}</th>
+                  <td>${data.temperature}</td>
+                  <td>${ data.cloud_desc }</td>
+                  <td>${ data.wind_speed }</td>
+                  <td>${ data.datetime }</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="loading" v-if="loading===true">Loading&#8230;</div>
+      </div>
+
+      <!-- bootrtap js files -->
+      <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+
+      <!-- vue.js files -->
+       <script src="https://cdn.jsdelivr.net/npm/vue@2.5.13/dist/vue.js"></script>
+       <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.3.5"></script>
+
+      <script type="text/javascript">
+          Vue.http.headers.common['X-CSRFToken'] = "{{ csrf_token }}";
+          new Vue({
+            el: '#starting',
+            delimiters: ['${','}'],
+            data: {
+            weatherinfo: [],
+            list: [],
+            loading: false,
+            token:'',
+            startDate: '',
+            endDate:''
+          },
+          mounted: function() {
+            this.login();
+         },
+          methods: {
+           login: function(){
+             var formData = new FormData();
+             formData.append('username', 'user');
+             formData.append('password', 'password');
+
+             this.$http.post('/api/login', formData)
+               .then((response) => {
+                 this.token = response.data;
+                 this.getWeather('Token ' + response.data.token);
+               })
+               .catch((err) => {
+                 this.loading = false;
+                 console.log(err);
+               })
+           },
+           getWeather: function(token) {
+             let headers = {
+               'Authorization': token
+             };
+             this.loading = true;
+             this.$http.get('/api/weather', {headers})
+               .then((response) => {
+                 this.weatherinfo = response.data;
+                 //this.list = response.data;
+                 this.loading = false;
+               })
+               .catch((err) => {
+                 this.loading = false;
+                 console.log(err);
+               })
+          },
+          filterWeather: function(){
+            this.list = [];
+            this.weatherinfo.forEach(res =>{
+              if(Date.parse(res.datetime) >= Date.parse(this.startDate) && Date.parse(res.datetime) <= Date.parse(this.endDate)){
+                this.list.push(res);
+              }
+
+            })
+          }
+         }
+         });
+       </script>
+  </body>
+</html>
